@@ -1,0 +1,33 @@
+node{
+
+def mavenHome = tool name: "Maven3.6.3"
+properties([buildDiscarder(logRotator(artifactDaysToKeepStr: '5', artifactNumToKeepStr: '5', daysToKeepStr: '5', numToKeepStr: '5')), pipelineTriggers([pollSCM('* * * * * ')])])
+
+stage('CheckoutCode'){
+git branch: 'development', credentialsId: 'abee8529-8f81-4a6d-ab0e-4ae61d2142f2', url: 'https://github.com/swathi510/maven-web-application.git'
+}	
+
+stage('Build'){
+sh "${mavenHome}/bin/mvn clean package"
+}
+
+stage('ExecuteSonarQubeReport'){
+sh "${mavenHome}/bin/mvn sonar:sonar"
+}
+
+stage('UploadArtifactIntoNexus'){
+sh "${mavenHome}/bin/mvn deploy"
+}
+
+stage('DeployAppIntoTomcatServer'){
+sshagent(['ea595b53-2b2e-46e4-9a10-f4af5478132d']) {
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@65.1.95.180:/opt/apache-tomcat-9.0.46/webapps/"
+}
+}
+stage('SendEmailNotification'){
+emailext body: '''Build is over
+
+Regards,
+Swathi''', subject: 'Build is over', to: 'swathi.tn24@gmail.com'
+}
+}
