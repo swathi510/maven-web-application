@@ -3,9 +3,7 @@ pipeline{
 
 agent any
 
-triggers{
-pollSCM('* * * * * ')
-}
+
 
 options{
 timestamps()
